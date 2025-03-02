@@ -1,5 +1,5 @@
 all:
-	g++ -Wall NasaLaunchAnalysis.cpp -o NasaLaunchAnalysis
+	g++ -std=c++11 -Wall -o nla NasaLaunchAnalysis.cpp TimeCode.cpp
 run:
-	./NasaLaunchAnalysis
+	./nla
 try: all run
