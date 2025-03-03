@@ -8,12 +8,12 @@
 
 using namespace std;
 
-// Struct to store drying information
+// Struct to store drying batch information
 struct DryingSnapShot {
-    string name;
-    int batchID;        // Unique batch ID (generated with rand())
-    time_t startTime;
-    TimeCode* timeToDry;  // Pointer to heap-allocated TimeCode
+    string name;         // Name of the batch
+    int batchID;         // Unique batch ID (generated with rand())
+    time_t startTime;    // Time when drying started
+    TimeCode* timeToDry; // Pointer to heap-allocated TimeCode
 };
 
 // Function to generate a random batch ID
@@ -22,25 +22,29 @@ int generateBatchID() {
 }
 
 // Function to calculate the surface area of a sphere
+// Formula: 4 * π * r^2
 double get_sphere_sa(double radius) {
     return 4 * M_PI * radius * radius;
 }
 
 // Function to compute drying time based on surface area
+// Uses total surface area as seconds to dry (as an arbitrary mapping)
 TimeCode* compute_time_code(double surfaceArea) {
     return new TimeCode(0, 0, static_cast<unsigned long long>(surfaceArea)); // Allocate dynamically
 }
 
 // Function to calculate remaining drying time
 long long int get_time_remaining(DryingSnapShot& dss) {
-    time_t elapsed = time(0) - dss.startTime;
-    long long totalSeconds = dss.timeToDry->GetTimeCodeAsSeconds();
-    return max(0LL, totalSeconds - elapsed);
+    time_t elapsed = time(0) - dss.startTime; // Time elapsed since start
+    long long totalSeconds = dss.timeToDry->GetTimeCodeAsSeconds(); // Get total drying time
+    return max(0LL, totalSeconds - elapsed); // Ensure time remaining is non-negative
 }
 
 // Function to format DryingSnapShot for printing
 string drying_snap_shot_to_string(DryingSnapShot& dss) {
-    long long remaining = get_time_remaining(dss);
+    long long remaining = get_time_remaining(dss); // Get remaining time in seconds
+    
+    // Convert remaining seconds into hours, minutes, and seconds
     TimeCode remainingTime(
         remaining / 3600,         // Hours
         (remaining % 3600) / 60,  // Minutes
@@ -75,12 +79,12 @@ int main() {
             cin >> radius;
 
             dss.batchID = generateBatchID(); // Assign a random batch ID
-            double surfaceArea = get_sphere_sa(radius);
-            dss.startTime = time(0);
-            dss.timeToDry = compute_time_code(surfaceArea); // Allocate dynamically
+            double surfaceArea = get_sphere_sa(radius); // Calculate surface area
+            dss.startTime = time(0); // Record current time as start time
+            dss.timeToDry = compute_time_code(surfaceArea); // Allocate drying time dynamically
 
             cout << "Batch-" << dss.batchID << " (" << dss.name << ") is now drying." << endl;
-            dryingBatches.push_back(dss);
+            dryingBatches.push_back(dss); // Store drying batch in vector
         }
         else if (choice == 'v') { // View drying items
             if (dryingBatches.empty()) {
@@ -91,7 +95,7 @@ int main() {
                     cout << drying_snap_shot_to_string(*it) << endl;
 
                     if (get_time_remaining(*it) == 0) {
-                        // Free memory and remove from list
+                        // Free memory and remove from list if drying is complete
                         delete it->timeToDry;
                         it = dryingBatches.erase(it);  // Remove from vector
                     } else {
@@ -106,7 +110,7 @@ int main() {
             for (auto& dss : dryingBatches) {
                 delete dss.timeToDry; // Free remaining memory
             }
-            dryingBatches.clear();
+            dryingBatches.clear(); // Clear all batches from vector
             break;
         }
         else {
