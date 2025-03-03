@@ -1,4 +1,3 @@
-
 #include <iostream>
 #include <assert.h>
 #include "TimeCode.h"
@@ -31,8 +30,8 @@ void TestDefaultConstructor(){
 	cout << "Testing Default Constructor" << endl;
 	TimeCode tc;
 	
-	//cout << "Testing ToString()" << endl;
-	//cout << "tc: " << tc.ToString() << endl;
+	cout << "Testing ToString()" << endl;
+	cout << "tc: " << tc.ToString() << endl;
 	assert(tc.ToString() == "0:0:0");
 	
 	
@@ -51,7 +50,7 @@ void TestComponentConstructor(){
 	
 	// test 2, Random but "safe" inputs
 	TimeCode tc2 = TimeCode(3, 17, 42);
-	//cout << "tc2: " << tc2.ToString() << endl;
+	cout << "tc2: " << tc2.ToString() << endl;
 	assert(tc2.ToString() == "3:17:42");
 	
 	// test3, Roll-over inputs
@@ -68,7 +67,7 @@ void TestComponentConstructor(){
 	
 	// test 6, Really really big seconds value
 	TimeCode tc6 = TimeCode(0, 0, 13241341347);
-	//cout << tc6.ToString() << endl;
+	cout << tc6.ToString() << endl;
 	assert(tc6.ToString() == "3678150:22:27");
 	
 	cout << "PASSED!" << endl << endl;

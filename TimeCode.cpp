@@ -1,64 +1,72 @@
 #include "TimeCode.h"
-#include <stdexcept>
+#include <iomanip>  // For formatting output
+#include <stdexcept> // For handling exceptions
+#include <sstream>   // For string stream operations
 
 using namespace std;
 
-// Constructor: Accepts hours, minutes, and seconds and converts them into total seconds.
-// This ensures that minutes and seconds do not exceed 59, carrying over excess values properly.
+// Constructor: Converts hours, minutes, and seconds into total seconds.
+// Ensures proper carryover when values exceed 59.
 TimeCode::TimeCode(unsigned int hr, unsigned int min, long long unsigned int sec) {
-    min += sec / 60;  // Convert excess seconds into minutes
-    sec = sec % 60;   // Keep only the leftover seconds
-    hr += min / 60;   // Convert excess minutes into hours
-    min = min % 60;   // Keep only the leftover minutes
-    t = ComponentsToSeconds(hr, min, sec); // Store the total time as seconds
+    min += sec / 60;  // Carry over excess seconds into minutes
+    sec = sec % 60;   // Keep seconds within 0-59 range
+    hr += min / 60;   // Carry over excess minutes into hours
+    min = min % 60;   // Keep minutes within 0-59 range
+
+    t = static_cast<long long unsigned int>(hr) * 3600 + 
+        static_cast<long long unsigned int>(min) * 60 + sec;
 }
 
 // Copy Constructor: Creates a new TimeCode object with the same total seconds.
 TimeCode::TimeCode(const TimeCode& tc) {
-   t = tc.t;
+    t = tc.t;
 }
 
-// Converts hours, minutes, and seconds into a single total seconds value.
-// Ensures minutes and seconds do not exceed 59 before conversion.
+// Converts hours, minutes, and seconds into total seconds.
+// Ensures that minutes and seconds are valid (less than 60).
 long long unsigned int TimeCode::ComponentsToSeconds(unsigned int hr, unsigned int min, unsigned long long int sec) {
     if (min >= 60 || sec >= 60) {
-        throw invalid_argument("Seconds and minutes have to be LESS than 60!");
+        throw invalid_argument("Seconds and minutes must be less than 60!");
     }
     return hr * 3600 + min * 60 + sec;
 }
 
-// Breaks up total seconds into hours, minutes, and seconds.
+// Extracts hours, minutes, and seconds from the total seconds.
 void TimeCode::GetComponents(unsigned int& hr, unsigned int& min, unsigned int& sec) const {
-    hr = t / 3600;
-    min = (t % 3600) / 60;
-    sec = t % 60;
+    unsigned long long int totalSeconds = t; // Store total seconds
+
+    hr = static_cast<unsigned int>(totalSeconds / 3600);  // Extract hours
+    totalSeconds %= 3600;  // Remaining seconds after extracting hours
+
+    min = static_cast<unsigned int>(totalSeconds / 60);  // Extract minutes
+    sec = static_cast<unsigned int>(totalSeconds % 60);  // Extract remaining seconds
 }
 
 // Updates only the hours component, leaving minutes and seconds unchanged.
 void TimeCode::SetHours(unsigned int hours) {
     unsigned int hr, min, sec;
-    GetComponents(hr, min, sec);
-    t = ComponentsToSeconds(hours, min, sec);
+    GetComponents(hr, min, sec); // Extract current time components
+    t = ComponentsToSeconds(hours, min, sec); // Recalculate total time with new hours
 }
 
 // Updates only the minutes component, ensuring it remains valid.
 void TimeCode::SetMinutes(unsigned int minutes) {
     if (minutes >= 60) {
-        throw invalid_argument("Minutes has to be LESS than 60!");
+        throw invalid_argument("Minutes must be less than 60!");
     }
     unsigned int hr, min, sec;
-    GetComponents(hr, min, sec);
-    t = ComponentsToSeconds(hr, minutes, sec);
+    GetComponents(hr, min, sec); // Extract current time components
+    t = ComponentsToSeconds(hr, minutes, sec); // Recalculate total time with new minutes
 }
 
 // Updates only the seconds component, ensuring it remains valid.
 void TimeCode::SetSeconds(unsigned int seconds) {
     if (seconds >= 60) {
-        throw invalid_argument("Seconds have to be LESS than 60!");
+        throw invalid_argument("Seconds must be less than 60!");
     }
     unsigned int hr, min, sec;
-    GetComponents(hr, min, sec);
-    t = ComponentsToSeconds(hr, min, seconds);
+    GetComponents(hr, min, sec); // Extract current time components
+    t = ComponentsToSeconds(hr, min, seconds); // Recalculate total time with new seconds
 }
 
 // Resets the time to zero.
@@ -84,38 +92,45 @@ unsigned int TimeCode::GetSeconds() const {
 // Converts the time into a human-readable string (e.g., "3:15:42").
 string TimeCode::ToString() const {
     unsigned int hr, min, sec;
-    GetComponents(hr, min, sec);
-    string result = "";
-    result += to_string(hr) + ":";
-    result += to_string(min) + ":";
-    result += to_string(sec);
-    return result;
+    GetComponents(hr, min, sec); // Extract time components
+    
+    ostringstream oss;
+    oss << hr << ":" << min << ":" << sec; // Format output as "hh:mm:ss"
+    return oss.str();
 }
 
 // Adds two TimeCode objects together and returns a new TimeCode object.
 TimeCode TimeCode::operator+(const TimeCode& other) const {
-    return TimeCode(0, 0, t + other.t);
+    return TimeCode(0, 0, t + other.t); // Add total seconds and create new object
 }
 
 // Subtracts one TimeCode from another, ensuring the result is not negative.
 TimeCode TimeCode::operator-(const TimeCode& other) const {
     if (t < other.t) {
-        throw invalid_argument("Cannot have negative input!");
+        throw invalid_argument("Cannot have negative time!");
     }
-    return TimeCode(0, 0, t - other.t);
+    return TimeCode(0, 0, t - other.t); // Subtract total seconds and create new object
 }
 
-// Multiplies the TimeCode by a single numeric value, useful for scaling time values.
+// Multiplies the TimeCode by a numeric value, useful for scaling time values.
 TimeCode TimeCode::operator*(double a) const {
-    return TimeCode(0, 0, static_cast<long long unsigned int>(t * a));
+    if (a < 0) {
+        throw invalid_argument("Cannot multiply by a negative number!");
+    }
+    long long unsigned int newSeconds = static_cast<long long unsigned int>(t * a); // Scale time
+    return TimeCode(0, 0, newSeconds);
 }
 
-// Divides the TimeCode by a single numeric value, ensuring no division by zero occurs.
+// Divides the TimeCode by a numeric value, ensuring no division by zero occurs.
 TimeCode TimeCode::operator/(double a) const {
     if (a == 0) {
         throw invalid_argument("Cannot divide by 0!");
     }
-    return TimeCode(0, 0, static_cast<long long unsigned int>(t / a));
+    if (a < 0) {
+        throw invalid_argument("Cannot divide by a negative number!");
+    }
+    long long unsigned int newSeconds = static_cast<long long unsigned int>(t / a); // Scale time
+    return TimeCode(0, 0, newSeconds);
 }
 
 // Equality operator: Returns true if two TimeCode objects have the same total time.
@@ -123,7 +138,7 @@ bool TimeCode::operator==(const TimeCode& other) const {
     return t == other.t;
 }
 
-// Inequality operator: Returns true if two TimeCode objects do not have the same time.
+// Inequality operator: Returns true if two TimeCode objects have different total time.
 bool TimeCode::operator!=(const TimeCode& other) const {
     return t != other.t;
 }
@@ -147,5 +162,3 @@ bool TimeCode::operator>(const TimeCode& other) const {
 bool TimeCode::operator>=(const TimeCode& other) const {
     return t >= other.t;
 }
-
-// used zybook chapters for help
